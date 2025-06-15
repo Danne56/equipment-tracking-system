@@ -39,6 +39,7 @@
     "drizzle-kit": "^0.31.1",
     "drizzle-orm": "^0.44.2",
     "jsqr": "^1.4.0",
+    "nanoid": "^5.1.5",
     "qrcode": "^1.5.4",
     "sqlite3": "^5.1.7",
     "uuid": "^11.1.0"

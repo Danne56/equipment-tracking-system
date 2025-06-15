@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Package, Users, Clock, AlertCircle } from 'lucide-react'
-import { Tool, BorrowRecord } from 'shared'
+import { Package, Users, Clock } from 'lucide-react'
+import type { Tool, BorrowRecord } from 'shared'
 
 export default function Dashboard() {
   const [stats, setStats] = useState({

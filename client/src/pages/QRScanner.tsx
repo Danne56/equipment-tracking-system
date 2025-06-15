@@ -1,32 +1,75 @@
 import { useState, useRef, useEffect } from 'react'
 import { QrCode, Package, User, MapPin, Target } from 'lucide-react'
-import { Tool, BorrowToolRequest } from 'shared'
+import type { Tool, BorrowToolRequest } from 'shared'
 
 // Simple QR scanner component using device camera
-function QRScannerComponent({ onScan, onError }: { onScan: (result: string) => void, onError: (error: string) => void }) {
+function QRScannerComponent({ onScan: _onScan, onError, onRetry }: { 
+  onScan: (result: string) => void, 
+  onError: (error: string) => void,
+  onRetry?: () => void
+}) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [isScanning, setIsScanning] = useState(false)
+  const [cameraPermission, setCameraPermission] = useState<'granted' | 'denied' | 'prompt' | 'checking'>('checking')
+  const [stream, setStream] = useState<MediaStream | null>(null)
 
   useEffect(() => {
-    let stream: MediaStream | null = null
     let animationId: number
+    let mounted = true
 
     const startCamera = async () => {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ 
-          video: { facingMode: 'environment' } // Use back camera
+        // Check camera permissions first
+        if ('permissions' in navigator) {
+          const permissionStatus = await navigator.permissions.query({ name: 'camera' as PermissionName })
+          setCameraPermission(permissionStatus.state as 'granted' | 'denied' | 'prompt')
+          
+          if (permissionStatus.state === 'denied') {
+            onError('Camera permission denied. Please enable camera access in your browser settings.')
+            return
+          }
+        }
+
+        const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            facingMode: 'environment',
+            width: { ideal: 640 },
+            height: { ideal: 480 }
+          } 
         })
+        
+        if (!mounted) {
+          // Component unmounted, clean up
+          mediaStream.getTracks().forEach(track => track.stop())
+          return
+        }
+
+        setStream(mediaStream)
+        setCameraPermission('granted')
         
         if (videoRef.current) {
           const video = videoRef.current
-          video.srcObject = stream
-          video.play()
-          setIsScanning(true)
+          video.srcObject = mediaStream
           
-          // Start scanning for QR codes
+          video.onloadedmetadata = () => {
+            if (mounted) {
+              video.play().then(() => {
+                setIsScanning(true)
+                startScanning()
+              }).catch(err => {
+                console.error('Video play error:', err)
+                onError('Failed to start video playback.')
+              })
+            }
+          }
+        }
+
+        const startScanning = () => {
           const scan = () => {
-            if (videoRef.current && canvasRef.current && isScanning) {
+            if (!mounted || !isScanning) return
+            
+            if (videoRef.current && canvasRef.current) {
               const video = videoRef.current
               const canvas = canvasRef.current
               const context = canvas.getContext('2d')
@@ -42,21 +85,36 @@ function QRScannerComponent({ onScan, onError }: { onScan: (result: string) => v
                 // and call onScan(qrCodeResult) when found
               }
               
-              animationId = requestAnimationFrame(scan)
+              if (mounted) {
+                animationId = requestAnimationFrame(scan)
+              }
             }
           }
-          
-          video.addEventListener('loadedmetadata', scan)
+          scan()
         }
-      } catch (error) {
+
+      } catch (error: any) {
         console.error('Error accessing camera:', error)
-        onError('Failed to access camera. Please ensure camera permissions are granted.')
+        setCameraPermission('denied')
+        
+        if (error.name === 'NotAllowedError') {
+          onError('Camera permission denied. Please allow camera access and try again.')
+        } else if (error.name === 'NotFoundError') {
+          onError('No camera found on this device.')
+        } else if (error.name === 'NotReadableError') {
+          onError('Camera is already in use by another application.')
+        } else if (error.name === 'AbortError') {
+          onError('Camera access was aborted. Please try again.')
+        } else {
+          onError('Failed to access camera. Please check your browser settings and try again.')
+        }
       }
     }
 
     startCamera()
 
     return () => {
+      mounted = false
       if (stream) {
         stream.getTracks().forEach(track => track.stop())
       }
@@ -65,26 +123,67 @@ function QRScannerComponent({ onScan, onError }: { onScan: (result: string) => v
       }
       setIsScanning(false)
     }
-  }, [isScanning, onError])
+  }, [onError]) // Remove isScanning from dependency to prevent infinite loops
 
-  return (
-    <div className="relative w-full max-w-md mx-auto">
-      <video
-        ref={videoRef}
-        className="w-full h-64 object-cover rounded-lg border-2 border-dashed border-gray-300"
-        playsInline
-        muted
-      />
-      <canvas ref={canvasRef} className="hidden" />
-      
-      {/* Scanning overlay */}
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div className="w-48 h-48 border-2 border-blue-500 border-dashed rounded-lg flex items-center justify-center">
-          <QrCode className="h-12 w-12 text-blue-500" />
+  const renderCameraView = () => {
+    if (cameraPermission === 'checking') {
+      return (
+        <div className="w-full h-64 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+            <p className="text-sm text-gray-600">Checking camera permissions...</p>
+          </div>
+        </div>
+      )
+    }
+
+    if (cameraPermission === 'denied') {
+      return (
+        <div className="w-full h-64 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
+          <div className="text-center">
+            <QrCode className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+            <p className="text-sm text-gray-600 mb-2">Camera access denied</p>
+            <p className="text-xs text-gray-500 mb-4">Please enable camera in browser settings</p>
+            {onRetry && (
+              <button
+                onClick={onRetry}
+                className="bg-blue-600 text-white px-3 py-2 rounded-md text-sm hover:bg-blue-700"
+              >
+                Try Again
+              </button>
+            )}
+          </div>
+        </div>
+      )
+    }
+
+    return (
+      <div className="relative w-full max-w-md mx-auto">
+        <video
+          ref={videoRef}
+          className="w-full h-64 object-cover rounded-lg border-2 border-dashed border-gray-300"
+          playsInline
+          muted
+          autoPlay
+        />
+        <canvas ref={canvasRef} className="hidden" />
+        
+        {/* Scanning overlay */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-48 h-48 border-2 border-blue-500 border-dashed rounded-lg flex items-center justify-center">
+            <QrCode className="h-12 w-12 text-blue-500" />
+          </div>
+        </div>
+        
+        {/* Status indicator */}
+        <div className="absolute top-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs">
+          {isScanning ? '🔴 Scanning...' : '⏸ Paused'}
         </div>
       </div>
-    </div>
-  )
+    )
+  }
+
+  return renderCameraView()
 }
 
 export default function QRScanner() {
@@ -99,25 +198,27 @@ export default function QRScanner() {
   const [manualQrInput, setManualQrInput] = useState('')
   const [showManualInput, setShowManualInput] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string>('')
 
   const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3000"
 
   const handleQrScan = async (qrId: string) => {
     setLoading(true)
+    setError('')
     try {
       const response = await fetch(`${SERVER_URL}/api/tools/qr/${qrId}`)
       const data = await response.json()
 
       if (data.success) {
         setScannedTool(data.tool)
-        setBorrowForm(prev => ({ ...prev, toolId: data.tool.id }))
+        setBorrowForm((prev: any) => ({ ...prev, toolId: data.tool.id }))
         setShowBorrowForm(true)
       } else {
-        alert('Tool not found with this QR code')
+        setError('Tool not found with this QR code')
       }
     } catch (error) {
       console.error('Error fetching tool:', error)
-      alert('Failed to fetch tool information')
+      setError('Failed to fetch tool information. Please check your connection.')
     }
     setLoading(false)
   }
@@ -134,6 +235,7 @@ export default function QRScanner() {
   const handleBorrowSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
+    setError('')
 
     try {
       const response = await fetch(`${SERVER_URL}/api/borrow`, {
@@ -147,6 +249,7 @@ export default function QRScanner() {
       const data = await response.json()
 
       if (data.success) {
+        setError('')
         alert('Tool borrowed successfully!')
         setShowBorrowForm(false)
         setScannedTool(null)
@@ -157,17 +260,27 @@ export default function QRScanner() {
           purpose: ''
         })
       } else {
-        alert(data.message)
+        setError(data.message)
       }
     } catch (error) {
       console.error('Error borrowing tool:', error)
-      alert('Failed to borrow tool')
+      setError('Failed to borrow tool. Please check your connection.')
     }
     setLoading(false)
   }
 
-  const handleError = (error: string) => {
-    alert(error)
+  const handleError = (errorMessage: string) => {
+    setError(errorMessage)
+  }
+
+  const clearError = () => {
+    setError('')
+  }
+
+  const handleRetryCamera = () => {
+    setError('')
+    // Force component re-mount by changing key
+    window.location.reload()
   }
 
   return (
@@ -176,6 +289,31 @@ export default function QRScanner() {
         <h2 className="text-2xl font-bold text-gray-900">QR Code Scanner</h2>
         <p className="text-gray-600">Scan QR codes to quickly borrow or return tools</p>
       </div>
+
+      {/* Error Alert */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <div className="flex">
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">Error</h3>
+              <div className="mt-2 text-sm text-red-700">
+                <p>{error}</p>
+              </div>
+              <div className="mt-4">
+                <div className="-mx-2 -my-1.5 flex">
+                  <button
+                    type="button"
+                    onClick={clearError}
+                    className="bg-red-50 px-2 py-1.5 rounded-md text-sm font-medium text-red-800 hover:bg-red-100"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {!showBorrowForm ? (
         <div className="bg-white rounded-lg shadow-sm border p-6">
@@ -219,7 +357,7 @@ export default function QRScanner() {
 
             <div className="text-center">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Scan QR Code</h3>
-              <QRScannerComponent onScan={handleQrScan} onError={handleError} />
+              <QRScannerComponent onScan={handleQrScan} onError={handleError} onRetry={handleRetryCamera} />
               <p className="text-sm text-gray-500 mt-4">
                 Position the QR code within the frame to scan
               </p>

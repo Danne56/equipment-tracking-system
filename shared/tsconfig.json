@@ -10,6 +10,7 @@
     "declaration": true,
     "outDir": "./dist",
     "noEmit": false,
+    "composite": true,
 
     // Type checking
     "strict": true,

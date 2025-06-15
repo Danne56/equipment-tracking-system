@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
-import { Notification } from 'shared'
+import type { Notification } from 'shared'
 
 interface NotificationContextType {
   notifications: (Notification & { tool: any })[]

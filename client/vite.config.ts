@@ -5,6 +5,9 @@ import path from 'path'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  server: {
+    allowedHosts: ["5173.servy.my.id"]
+  },
   resolve: {
     alias: {
       "@client": path.resolve(__dirname, "./src"),

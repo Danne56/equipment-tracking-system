@@ -1,5 +1,4 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import { useState, useEffect } from 'react'
 import Navbar from './components/Navbar'
 import Dashboard from './pages/Dashboard'
 import ToolManagement from './pages/ToolManagement.tsx'

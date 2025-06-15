@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Plus, Package, Edit, QrCode, Eye } from 'lucide-react'
-import { Tool, CreateToolRequest } from 'shared'
+import { Plus, Package, QrCode } from 'lucide-react'
+import type { Tool, CreateToolRequest } from 'shared'
 
 export default function ToolManagement() {
   const [tools, setTools] = useState<Tool[]>([])

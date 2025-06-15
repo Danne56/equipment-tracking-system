@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { FileText, Package, User, MapPin, Calendar, CheckCircle } from 'lucide-react'
-import { BorrowRecord, Tool, ReturnToolRequest } from 'shared'
+import type { BorrowRecord, Tool, ReturnToolRequest } from 'shared'
 
 type ExtendedBorrowRecord = BorrowRecord & { tool: Tool | null }
 

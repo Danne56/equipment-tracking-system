@@ -15,6 +15,7 @@
     "declaration": true,
     "outDir": "dist",
     "noEmit": false,
+    "composite": true,
     "emitDecoratorMetadata": true,
 
     // Module resolution
