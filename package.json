@@ -19,7 +19,10 @@
     "build:shared": "cd shared && bun run build",
     "build:server": "cd server && bun run build",
     "build": "bun run build:shared && bun run build:server && bun run build:client",
-    "postinstall": "bun run build:shared && bun run build:server"
+    "postinstall": "bun run build:shared && bun run build:server",
+    "db:generate": "cd server && bun run db:generate",
+    "db:migrate": "cd server && bun run db:migrate",
+    "db:seed": "cd server && bun run db:seed"
   },
   "keywords": [
     "bun",
@@ -30,7 +33,8 @@
   ],
   "devDependencies": {
     "bun-types": "latest",
-    "concurrently": "^9.1.2"
+    "concurrently": "^9.1.2",
+    "@types/pg": "^8.11.12"
   },
   "peerDependencies": {
     "typescript": "^5.7.3"
@@ -40,8 +44,9 @@
     "drizzle-orm": "^0.44.2",
     "jsqr": "^1.4.0",
     "nanoid": "^5.1.5",
+    "pg": "^8.13.1",
+    "postgres": "^3.4.6",
     "qrcode": "^1.5.4",
-    "sqlite3": "^5.1.7",
     "uuid": "^11.1.0"
   }
 }

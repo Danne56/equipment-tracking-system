@@ -46,7 +46,7 @@ export const markNotificationAsReadController = async (c: Context) => {
         }
 
         const [updatedNotification] = await db.update(notifications)
-            .set({ read: true })
+            .set({ read: 'true' })
             .where(eq(notifications.id, notificationId))
             .returning();
 

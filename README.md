@@ -1,27 +1,28 @@
-# bhvr 🦫
+# Workshop Tool Tracking System 🔧
 
-![cover](https://cdn.stevedylan.dev/ipfs/bafybeievx27ar5qfqyqyud7kemnb5n2p4rzt2matogi6qttwkpxonqhra4)
-
-A full-stack TypeScript monorepo starter with shared types, using Bun, Hono, Vite, and React
-
-## Why bhvr?
-
-While there are plenty of existing app building stacks out there, many of them are either bloated, outdated, or have too much of a vendor lock-in. bhvr is built with the opinion that you should be able to deploy your client or server in any environment while also keeping type saftey.
+A full-stack TypeScript workshop tool tracking application built with PostgreSQL, Bun, Hono, Vite, and React. Features QR code scanning, borrowing tracking, and real-time notifications.
 
 ## Features
 
+- **Tool Management**: Add, edit, and track workshop tools
+- **QR Code Integration**: Generate and scan QR codes for tools
+- **Borrowing System**: Track who borrowed what tool and when
+- **Real-time Notifications**: Get notified about overdue tools and returns
+- **PostgreSQL Database**: Robust data storage with proper relationships
 - **Full-Stack TypeScript**: End-to-end type safety between client and server
 - **Shared Types**: Common type definitions shared between client and server
 - **Monorepo Structure**: Organized as a workspaces-based monorepo
 - **Modern Stack**:
+  - [PostgreSQL](https://www.postgresql.org/) for data storage
   - [Bun](https://bun.sh) as the JavaScript runtime
   - [Hono](https://hono.dev) as the backend framework
   - [Vite](https://vitejs.dev) for frontend bundling
   - [React](https://react.dev) for the frontend UI
+  - [Drizzle ORM](https://orm.drizzle.team/) for database management
 
 ## Project Structure
 
-```
+```bash
 .
 ├── client/               # React frontend
 ├── server/               # Hono backend
@@ -34,7 +35,7 @@ While there are plenty of existing app building stacks out there, many of them a
 
 bhvr uses Hono as a backend API for it's simplicity and massive ecosystem of plugins. If you have ever used Express then it might feel familiar. Declaring routes and returning data is easy.
 
-```
+```bash
 server
 ├── bun.lock
 ├── package.json
@@ -76,7 +77,7 @@ If you wanted to add a database to Hono you can do so with a multitude of Typesc
 
 bhvr uses Vite + React Typescript template, which means you can build your frontend just as you would with any other React app. This makes it flexible to add UI components like [shadcn/ui](https://ui.shadcn.com) or routing using [React Router](https://reactrouter.com/start/declarative/installation).
 
-```
+```bash
 client
 ├── eslint.config.js
 ├── index.html
@@ -155,7 +156,7 @@ export default App
 
 The Shared package is used for anything you want to share between the Server and Client. This could be types or libraries that you use in both the enviorments.
 
-```
+```bash
 shared
 ├── package.json
 ├── src
@@ -179,6 +180,8 @@ import { ApiResponse } from 'shared'
 
 ## Getting Started
 
+> **⚠️ Database Migration Notice**: This application now uses PostgreSQL instead of SQLite. See [POSTGRESQL_SETUP.md](./POSTGRESQL_SETUP.md) for complete setup instructions.
+
 ### Quick Start
 
 You can start a new bhvr project using the [CLI](https://github.com/stevedylandev/create-bhvr)
@@ -194,6 +197,23 @@ bun create bhvr
 bun install
 ```
 
+**Database Setup (Required)**:
+
+1. Install and configure PostgreSQL (see [POSTGRESQL_SETUP.md](./POSTGRESQL_SETUP.md))
+
+2. Copy and configure environment variables:
+
+   ```bash
+   cp .env.example .env
+   cp server/.env.example server/.env
+   ```
+
+3. Run database migrations:
+
+   ```bash
+   cd server && bun run db:migrate
+   ```
+
 ### Development
 
 ```bash
@@ -204,6 +224,25 @@ bun run dev
 bun run dev:shared  # Watch and compile shared types
 bun run dev:server  # Run the Hono backend
 bun run dev:client  # Run the Vite dev server for React
+```
+
+### Database Management
+
+```bash
+# Test PostgreSQL connection
+bun run db:test
+
+# Generate new migrations (after schema changes)
+bun run db:generate
+
+# Run pending migrations
+bun run db:migrate
+
+# Add sample data for testing
+bun run db:seed
+
+# Run full system test
+bun run test:system
 ```
 
 ### Building
@@ -222,12 +261,14 @@ bun run build:client  # Build the React frontend
 Deplying each piece is very versatile and can be done numerous ways, and exploration into automating these will happen at a later date. Here are some references in the meantime.
 
 **Client**
+
 - [Orbiter](https://orbiter.host)
 - [GitHub Pages](https://vite.dev/guide/static-deploy.html#github-pages)
 - [Netlify](https://vite.dev/guide/static-deploy.html#netlify)
 - [Cloudflare Pages](https://vite.dev/guide/static-deploy.html#cloudflare-pages)
 
 **Server**
+
 - [Cloudflare Worker](https://gist.github.com/stevedylandev/4aa1fc569bcba46b7169193c0498d0b3)
 - [Bun](https://hono.dev/docs/getting-started/bun)
 - [Node.js](https://hono.dev/docs/getting-started/nodejs)

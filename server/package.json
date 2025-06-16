@@ -7,16 +7,20 @@
     "build": "tsc",
     "dev": "bun --watch run src/index.ts",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "db:seed": "bun run seed.ts"
   },
   "dependencies": {
     "@paralleldrive/cuid2": "^2.2.2",
     "@types/qrcode": "^1.5.5",
     "@types/uuid": "^10.0.0",
     "hono": "^4.7.11",
+    "pg": "^8.13.1",
+    "postgres": "^3.4.6",
     "shared": "workspace:*"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/pg": "^8.11.12"
   }
 }
