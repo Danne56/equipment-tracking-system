@@ -1,190 +1,7 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
 import { QrCode, Package, User, MapPin, Target } from 'lucide-react'
 import type { Tool, BorrowToolRequest } from 'shared'
-
-// Simple QR scanner component using device camera
-function QRScannerComponent({ onScan: _onScan, onError, onRetry }: { 
-  onScan: (result: string) => void, 
-  onError: (error: string) => void,
-  onRetry?: () => void
-}) {
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [isScanning, setIsScanning] = useState(false)
-  const [cameraPermission, setCameraPermission] = useState<'granted' | 'denied' | 'prompt' | 'checking'>('checking')
-  const [stream, setStream] = useState<MediaStream | null>(null)
-
-  useEffect(() => {
-    let animationId: number
-    let mounted = true
-
-    const startCamera = async () => {
-      try {
-        // Check camera permissions first
-        if ('permissions' in navigator) {
-          const permissionStatus = await navigator.permissions.query({ name: 'camera' as PermissionName })
-          setCameraPermission(permissionStatus.state as 'granted' | 'denied' | 'prompt')
-          
-          if (permissionStatus.state === 'denied') {
-            onError('Camera permission denied. Please enable camera access in your browser settings.')
-            return
-          }
-        }
-
-        const mediaStream = await navigator.mediaDevices.getUserMedia({ 
-          video: { 
-            facingMode: 'environment',
-            width: { ideal: 640 },
-            height: { ideal: 480 }
-          } 
-        })
-        
-        if (!mounted) {
-          // Component unmounted, clean up
-          mediaStream.getTracks().forEach(track => track.stop())
-          return
-        }
-
-        setStream(mediaStream)
-        setCameraPermission('granted')
-        
-        if (videoRef.current) {
-          const video = videoRef.current
-          video.srcObject = mediaStream
-          
-          video.onloadedmetadata = () => {
-            if (mounted) {
-              video.play().then(() => {
-                setIsScanning(true)
-                startScanning()
-              }).catch(err => {
-                console.error('Video play error:', err)
-                onError('Failed to start video playback.')
-              })
-            }
-          }
-        }
-
-        const startScanning = () => {
-          const scan = () => {
-            if (!mounted || !isScanning) return
-            
-            if (videoRef.current && canvasRef.current) {
-              const video = videoRef.current
-              const canvas = canvasRef.current
-              const context = canvas.getContext('2d')
-              
-              if (context && video.readyState === video.HAVE_ENOUGH_DATA) {
-                canvas.width = video.videoWidth
-                canvas.height = video.videoHeight
-                context.drawImage(video, 0, 0, canvas.width, canvas.height)
-                
-                // Here you would typically use a QR code library like jsQR
-                // For demo purposes, we'll simulate QR detection with manual input
-                // In a real implementation, you would parse the canvas for QR codes
-                // and call onScan(qrCodeResult) when found
-              }
-              
-              if (mounted) {
-                animationId = requestAnimationFrame(scan)
-              }
-            }
-          }
-          scan()
-        }
-
-      } catch (error: any) {
-        console.error('Error accessing camera:', error)
-        setCameraPermission('denied')
-        
-        if (error.name === 'NotAllowedError') {
-          onError('Camera permission denied. Please allow camera access and try again.')
-        } else if (error.name === 'NotFoundError') {
-          onError('No camera found on this device.')
-        } else if (error.name === 'NotReadableError') {
-          onError('Camera is already in use by another application.')
-        } else if (error.name === 'AbortError') {
-          onError('Camera access was aborted. Please try again.')
-        } else {
-          onError('Failed to access camera. Please check your browser settings and try again.')
-        }
-      }
-    }
-
-    startCamera()
-
-    return () => {
-      mounted = false
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop())
-      }
-      if (animationId) {
-        cancelAnimationFrame(animationId)
-      }
-      setIsScanning(false)
-    }
-  }, [onError]) // Remove isScanning from dependency to prevent infinite loops
-
-  const renderCameraView = () => {
-    if (cameraPermission === 'checking') {
-      return (
-        <div className="w-full h-64 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-            <p className="text-sm text-gray-600">Checking camera permissions...</p>
-          </div>
-        </div>
-      )
-    }
-
-    if (cameraPermission === 'denied') {
-      return (
-        <div className="w-full h-64 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
-          <div className="text-center">
-            <QrCode className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-            <p className="text-sm text-gray-600 mb-2">Camera access denied</p>
-            <p className="text-xs text-gray-500 mb-4">Please enable camera in browser settings</p>
-            {onRetry && (
-              <button
-                onClick={onRetry}
-                className="bg-blue-600 text-white px-3 py-2 rounded-md text-sm hover:bg-blue-700"
-              >
-                Try Again
-              </button>
-            )}
-          </div>
-        </div>
-      )
-    }
-
-    return (
-      <div className="relative w-full max-w-md mx-auto">
-        <video
-          ref={videoRef}
-          className="w-full h-64 object-cover rounded-lg border-2 border-dashed border-gray-300"
-          playsInline
-          muted
-          autoPlay
-        />
-        <canvas ref={canvasRef} className="hidden" />
-        
-        {/* Scanning overlay */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-48 h-48 border-2 border-blue-500 border-dashed rounded-lg flex items-center justify-center">
-            <QrCode className="h-12 w-12 text-blue-500" />
-          </div>
-        </div>
-        
-        {/* Status indicator */}
-        <div className="absolute top-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs">
-          {isScanning ? '🔴 Scanning...' : '⏸ Paused'}
-        </div>
-      </div>
-    )
-  }
-
-  return renderCameraView()
-}
+import QrReader from '../components/QrReader'
 
 export default function QRScanner() {
   const [scannedTool, setScannedTool] = useState<Tool | null>(null)
@@ -321,7 +138,7 @@ export default function QRScanner() {
             <div className="flex items-center justify-center space-x-4">
               <button
                 onClick={() => setShowManualInput(!showManualInput)}
-                className="flex items-center space-x-2 bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
+                className="flex items-center space-x-2 bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors"
               >
                 <QrCode className="h-4 w-4" />
                 <span>Manual Input</span>
@@ -339,7 +156,7 @@ export default function QRScanner() {
                       type="text"
                       value={manualQrInput}
                       onChange={(e) => setManualQrInput(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       placeholder="Enter tool ID from QR code"
                       required
                     />
@@ -347,7 +164,7 @@ export default function QRScanner() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
+                    className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
                   >
                     {loading ? 'Searching...' : 'Find Tool'}
                   </button>
@@ -357,9 +174,9 @@ export default function QRScanner() {
 
             <div className="text-center">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Scan QR Code</h3>
-              <QRScannerComponent onScan={handleQrScan} onError={handleError} onRetry={handleRetryCamera} />
+              <QrReader onScan={handleQrScan} onError={handleError} onRetry={handleRetryCamera} />
               <p className="text-sm text-gray-500 mt-4">
-                Position the QR code within the frame to scan
+                Position the QR code within the blue frame to scan
               </p>
             </div>
           </div>
@@ -404,7 +221,7 @@ export default function QRScanner() {
                       required
                       value={borrowForm.borrowerName}
                       onChange={(e) => setBorrowForm({ ...borrowForm, borrowerName: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       placeholder="Enter your name"
                     />
                   </div>
@@ -419,7 +236,7 @@ export default function QRScanner() {
                       required
                       value={borrowForm.borrowerLocation}
                       onChange={(e) => setBorrowForm({ ...borrowForm, borrowerLocation: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       placeholder="Workshop section/area"
                     />
                   </div>
@@ -434,7 +251,7 @@ export default function QRScanner() {
                     required
                     value={borrowForm.purpose}
                     onChange={(e) => setBorrowForm({ ...borrowForm, purpose: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="What will you use this tool for?"
                     rows={3}
                   />
@@ -447,14 +264,14 @@ export default function QRScanner() {
                       setShowBorrowForm(false)
                       setScannedTool(null)
                     }}
-                    className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+                    className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={loading}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
                   >
                     {loading ? 'Borrowing...' : 'Borrow Tool'}
                   </button>
