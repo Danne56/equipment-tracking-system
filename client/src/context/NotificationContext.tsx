@@ -6,6 +6,7 @@ interface NotificationContextType {
   unreadCount: number
   fetchNotifications: () => Promise<void>
   markAsRead: (id: string) => Promise<void>
+  markAllAsRead: () => Promise<void>
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined)
@@ -22,8 +23,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       const data = await response.json()
       
       if (data.success) {
-        setNotifications(data.notifications)
-        setUnreadCount(data.notifications.filter((n: Notification) => !n.read).length)
+        // Convert read field from string to boolean
+        const processedNotifications = data.notifications.map((n: any) => ({
+          ...n,
+          read: n.read === 'true'
+        }))
+        setNotifications(processedNotifications)
+        setUnreadCount(processedNotifications.filter((n: Notification) => !n.read).length)
       }
     } catch (error) {
       console.error('Error fetching notifications:', error)
@@ -40,17 +46,37 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         setNotifications(prev => 
           prev.map(n => n.id === id ? { ...n, read: true } : n)
         )
-        setUnreadCount(prev => prev - 1)
+        setUnreadCount(prev => Math.max(0, prev - 1))
       }
     } catch (error) {
       console.error('Error marking notification as read:', error)
     }
   }
 
+  const markAllAsRead = async () => {
+    try {
+      const unreadNotifications = notifications.filter(n => !n.read)
+      
+      // Mark all unread notifications as read
+      const promises = unreadNotifications.map(n => 
+        fetch(`${SERVER_URL}/api/notifications/${n.id}/read`, { method: 'PATCH' })
+      )
+      
+      await Promise.all(promises)
+      
+      // Update local state
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+      setUnreadCount(0)
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error)
+    }
+  }
+
   useEffect(() => {
     fetchNotifications()
-    // Poll for new notifications every 30 seconds
-    const interval = setInterval(fetchNotifications, 30000)
+    
+    // Poll for new notifications every 15 seconds for better responsiveness
+    const interval = setInterval(fetchNotifications, 15000)
     return () => clearInterval(interval)
   }, [])
 
@@ -59,7 +85,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       notifications,
       unreadCount,
       fetchNotifications,
-      markAsRead
+      markAsRead,
+      markAllAsRead
     }}>
       {children}
     </NotificationContext.Provider>

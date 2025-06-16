@@ -3,7 +3,7 @@ import { Bell, Package, Clock, CheckCircle, AlertCircle } from 'lucide-react'
 import { useNotifications } from '../context/NotificationContext'
 
 export default function Notifications() {
-  const { notifications, fetchNotifications, markAsRead } = useNotifications()
+  const { notifications, unreadCount, fetchNotifications, markAsRead, markAllAsRead } = useNotifications()
 
   useEffect(() => {
     fetchNotifications()
@@ -50,9 +50,19 @@ export default function Notifications() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900">Notifications</h2>
-        <p className="text-gray-600">Stay updated with tool borrowing and return activities</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Notifications</h2>
+          <p className="text-gray-600">Stay updated with tool borrowing and return activities</p>
+        </div>
+        {unreadCount > 0 && (
+          <button
+            onClick={markAllAsRead}
+            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+          >
+            Mark All as Read ({unreadCount})
+          </button>
+        )}
       </div>
 
       <div className="bg-white shadow-sm border rounded-lg overflow-hidden">
