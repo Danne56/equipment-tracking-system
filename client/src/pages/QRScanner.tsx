@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { QrCode, Package, User, MapPin, Target } from 'lucide-react'
+import Swal from 'sweetalert2'
 import type { Tool, BorrowToolRequest } from 'shared'
 import QrReader from '../components/QrReader'
 
@@ -68,7 +69,13 @@ export default function QRScanner() {
 
       if (data.success) {
         setError('')
-        alert('Tool borrowed successfully!')
+        await Swal.fire({
+          icon: 'success',
+          title: 'Success!',
+          text: 'Tool borrowed successfully!',
+          timer: 2000,
+          showConfirmButton: false
+        })
         // Reset all states and remount QrReader
         setShowBorrowForm(false)
         setScannedTool(null)

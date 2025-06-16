@@ -20,6 +20,7 @@
     "react-router-dom": "^7.6.2",
     "server": "workspace:*",
     "shared": "workspace:*",
+    "sweetalert2": "^11.22.0",
     "tailwindcss": "^4.1.10"
   },
   "devDependencies": {

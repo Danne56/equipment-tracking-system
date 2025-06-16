@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { FileText, Package, User, MapPin, Calendar, CheckCircle } from 'lucide-react'
+import Swal from 'sweetalert2'
 import type { BorrowRecord, Tool, ReturnToolRequest } from 'shared'
 
 type ExtendedBorrowRecord = BorrowRecord & { tool: Tool | null }
@@ -42,6 +43,19 @@ export default function BorrowRecords() {
   }
 
   const handleReturnTool = async (borrowRecordId: string) => {
+    const result = await Swal.fire({
+      title: 'Return Tool?',
+      text: 'Are you sure you want to return this tool?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#10b981',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, return it!',
+      cancelButtonText: 'Cancel'
+    })
+
+    if (!result.isConfirmed) return
+
     try {
       const response = await fetch(`${SERVER_URL}/api/return`, {
         method: 'POST',
@@ -56,13 +70,27 @@ export default function BorrowRecords() {
       if (data.success) {
         // Refresh the records
         fetchRecords()
-        alert('Tool returned successfully!')
+        await Swal.fire({
+          icon: 'success',
+          title: 'Success!',
+          text: 'Tool returned successfully!',
+          timer: 2000,
+          showConfirmButton: false
+        })
       } else {
-        alert(data.message)
+        await Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: data.message
+        })
       }
     } catch (error) {
       console.error('Error returning tool:', error)
-      alert('Failed to return tool')
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Failed to return tool'
+      })
     }
   }
 

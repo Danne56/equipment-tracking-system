@@ -41,9 +41,26 @@ export type CreateToolRequest = {
   description?: string;
 }
 
+export type UpdateToolRequest = {
+  name?: string;
+  description?: string;
+  status?: 'available' | 'borrowed' | 'maintenance';
+}
+
 export type CreateToolResponse = {
   success: boolean;
   tool?: Tool;
+  message: string;
+}
+
+export type UpdateToolResponse = {
+  success: boolean;
+  tool?: Tool;
+  message: string;
+}
+
+export type DeleteToolResponse = {
+  success: boolean;
   message: string;
 }
 

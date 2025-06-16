@@ -2,7 +2,7 @@ import type { Context } from 'hono';
 import { nanoid } from 'nanoid';
 import QRCode from 'qrcode';
 import { db } from '../database';
-import { tools, notifications } from '../database/schema';
+import { tools, notifications, borrowRecords } from '../database/schema';
 import { desc, eq } from 'drizzle-orm';
 
 // Get all tools
@@ -86,5 +86,174 @@ export const getToolByQrIdController = async (c: Context) => {
     } catch (error) {
         console.error('Error fetching tool by QR:', error);
         return c.json({ success: false, message: 'Failed to fetch tool' }, 500);
+    }
+};
+
+// Get tool by ID
+export const getToolByIdController = async (c: Context) => {
+    try {
+        const id = c.req.param('id');
+        const [tool] = await db.select().from(tools).where(eq(tools.id, id));
+
+        if (!tool) {
+            return c.json({ success: false, message: 'Tool not found' }, 404);
+        }
+        return c.json({ success: true, tool, message: 'Tool retrieved successfully' });
+    } catch (error) {
+        console.error('Error fetching tool by ID:', error);
+        return c.json({ success: false, message: 'Failed to fetch tool' }, 500);
+    }
+};
+
+// Update a tool
+export const updateToolController = async (c: Context) => {
+    try {
+        const id = c.req.param('id');
+        const body = await c.req.json();
+
+        // Check if tool exists
+        const [existingTool] = await db.select().from(tools).where(eq(tools.id, id));
+        if (!existingTool) {
+            return c.json({ success: false, message: 'Tool not found' }, 404);
+        }
+
+        // Validate input
+        const updateData: any = {
+            updatedAt: new Date()
+        };
+
+        if (body.name?.trim()) {
+            updateData.name = body.name.trim();
+        }
+
+        if (body.description !== undefined) {
+            updateData.description = body.description?.trim() || null;
+        }
+
+        if (body.status && ['available', 'borrowed', 'maintenance'].includes(body.status)) {
+            updateData.status = body.status;
+        }
+
+        // Update tool
+        const [updatedTool] = await db.update(tools)
+            .set(updateData)
+            .where(eq(tools.id, id))
+            .returning();
+
+        if (!updatedTool) {
+            return c.json({
+                success: false,
+                message: 'Failed to update tool'
+            }, 500);
+        }
+
+        // Create notification for tool update
+        await db.insert(notifications).values({
+            type: 'borrow', // Using existing type since schema doesn't have 'tool_updated'
+            message: `Tool "${updatedTool.name}" has been updated`,
+            toolId: updatedTool.id,
+        });
+
+        return c.json({
+            success: true,
+            tool: updatedTool,
+            message: 'Tool updated successfully'
+        });
+    } catch (error) {
+        console.error('Error updating tool:', error);
+        return c.json({
+            success: false,
+            message: 'Failed to update tool'
+        }, 500);
+    }
+};
+
+// Delete a tool
+export const deleteToolController = async (c: Context) => {
+    try {
+        const id = c.req.param('id');
+
+        // Check if tool exists
+        const [existingTool] = await db.select().from(tools).where(eq(tools.id, id));
+        if (!existingTool) {
+            return c.json({ success: false, message: 'Tool not found' }, 404);
+        }
+
+        // Check if tool is currently borrowed
+        if (existingTool.status === 'borrowed') {
+            return c.json({ 
+                success: false, 
+                message: 'Cannot delete a tool that is currently borrowed' 
+            }, 400);
+        }
+
+        // Check if there are any borrow records for this tool
+        const relatedBorrowRecords = await db.select().from(borrowRecords).where(eq(borrowRecords.toolId, id));
+        if (relatedBorrowRecords.length > 0) {
+            return c.json({
+                success: false,
+                message: 'Cannot delete a tool that has borrow history. Consider archiving instead.'
+            }, 400);
+        }
+
+        // Delete all related notifications first to avoid foreign key constraint violation
+        await db.delete(notifications).where(eq(notifications.toolId, id));
+
+        // Then delete the tool
+        await db.delete(tools).where(eq(tools.id, id));
+
+        return c.json({
+            success: true,
+            message: 'Tool deleted successfully'
+        });
+    } catch (error) {
+        console.error('Error deleting tool:', error);
+        return c.json({
+            success: false,
+            message: 'Failed to delete tool'
+        }, 500);
+    }
+};
+
+// Force delete a tool (removes all related data)
+export const forceDeleteToolController = async (c: Context) => {
+    try {
+        const id = c.req.param('id');
+
+        // Check if tool exists
+        const [existingTool] = await db.select().from(tools).where(eq(tools.id, id));
+        if (!existingTool) {
+            return c.json({ success: false, message: 'Tool not found' }, 404);
+        }
+
+        // Check if tool is currently borrowed
+        if (existingTool.status === 'borrowed') {
+            return c.json({ 
+                success: false, 
+                message: 'Cannot delete a tool that is currently borrowed' 
+            }, 400);
+        }
+
+        // Delete all related data in proper order to maintain referential integrity
+        
+        // 1. Delete notifications
+        await db.delete(notifications).where(eq(notifications.toolId, id));
+        
+        // 2. Delete borrow records 
+        await db.delete(borrowRecords).where(eq(borrowRecords.toolId, id));
+        
+        // 3. Finally delete the tool
+        await db.delete(tools).where(eq(tools.id, id));
+
+        return c.json({
+            success: true,
+            message: 'Tool and all related data deleted successfully'
+        });
+    } catch (error) {
+        console.error('Error force deleting tool:', error);
+        return c.json({
+            success: false,
+            message: 'Failed to delete tool'
+        }, 500);
     }
 };
