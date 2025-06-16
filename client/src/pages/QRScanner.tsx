@@ -16,6 +16,7 @@ export default function QRScanner() {
   const [showManualInput, setShowManualInput] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string>('')
+  const [qrReaderKey, setQrReaderKey] = useState(0) // Add key for QrReader remount
 
   const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3000"
 
@@ -68,6 +69,7 @@ export default function QRScanner() {
       if (data.success) {
         setError('')
         alert('Tool borrowed successfully!')
+        // Reset all states and remount QrReader
         setShowBorrowForm(false)
         setScannedTool(null)
         setBorrowForm({
@@ -76,6 +78,7 @@ export default function QRScanner() {
           borrowerLocation: '',
           purpose: ''
         })
+        setQrReaderKey(prev => prev + 1) // Force QrReader remount
       } else {
         setError(data.message)
       }
@@ -96,8 +99,14 @@ export default function QRScanner() {
 
   const handleRetryCamera = () => {
     setError('')
-    // Force component re-mount by changing key
-    window.location.reload()
+    setQrReaderKey(prev => prev + 1) // Remount QrReader instead of full page reload
+  }
+
+  // Reset QrReader when canceling borrow form
+  const handleCancelBorrow = () => {
+    setShowBorrowForm(false)
+    setScannedTool(null)
+    setQrReaderKey(prev => prev + 1) // Remount QrReader to reset its state
   }
 
   return (
@@ -174,7 +183,12 @@ export default function QRScanner() {
 
             <div className="text-center">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Scan QR Code</h3>
-              <QrReader onScan={handleQrScan} onError={handleError} onRetry={handleRetryCamera} />
+              <QrReader 
+                key={qrReaderKey} 
+                onScan={handleQrScan} 
+                onError={handleError} 
+                onRetry={handleRetryCamera} 
+              />
               <p className="text-sm text-gray-500 mt-4">
                 Position the QR code within the blue frame to scan
               </p>
@@ -260,10 +274,7 @@ export default function QRScanner() {
                 <div className="flex justify-end space-x-3 pt-4">
                   <button
                     type="button"
-                    onClick={() => {
-                      setShowBorrowForm(false)
-                      setScannedTool(null)
-                    }}
+                    onClick={handleCancelBorrow}
                     className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
                   >
                     Cancel
@@ -283,10 +294,7 @@ export default function QRScanner() {
                   This tool is currently {scannedTool.status} and cannot be borrowed.
                 </p>
                 <button
-                  onClick={() => {
-                    setShowBorrowForm(false)
-                    setScannedTool(null)
-                  }}
+                  onClick={handleCancelBorrow}
                   className="mt-4 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
                 >
                   Scan Another Tool
