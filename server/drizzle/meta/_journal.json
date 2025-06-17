@@ -8,6 +8,13 @@
       "when": 1750078244734,
       "tag": "0000_red_vindicator",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1750092298875,
+      "tag": "0001_bored_zemo",
+      "breakpoints": true
     }
   ]
 }
