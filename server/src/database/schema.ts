@@ -1,5 +1,5 @@
 import { pgTable, text, timestamp, pgEnum } from 'drizzle-orm/pg-core';
-import { createId } from '@paralleldrive/cuid2';
+import { nanoid } from 'nanoid';
 
 // Define enums for PostgreSQL
 export const toolStatusEnum = pgEnum('tool_status', ['available', 'borrowed', 'maintenance']);
@@ -7,7 +7,7 @@ export const borrowStatusEnum = pgEnum('borrow_status', ['active', 'returned']);
 export const notificationTypeEnum = pgEnum('notification_type', ['borrow', 'return', 'overdue']);
 
 export const tools = pgTable('tools', {
-  id: text('id').primaryKey().$defaultFn(() => createId()),
+  id: text('id').primaryKey().$defaultFn(() => nanoid(4)),
   name: text('name').notNull(),
   description: text('description'),
   qrCode: text('qr_code').notNull().unique(),
@@ -17,7 +17,7 @@ export const tools = pgTable('tools', {
 });
 
 export const borrowRecords = pgTable('borrow_records', {
-  id: text('id').primaryKey().$defaultFn(() => createId()),
+  id: text('id').primaryKey().$defaultFn(() => nanoid(4)),
   toolId: text('tool_id').notNull().references(() => tools.id),
   borrowerName: text('borrower_name').notNull(),
   borrowerLocation: text('borrower_location').notNull(),
@@ -28,7 +28,7 @@ export const borrowRecords = pgTable('borrow_records', {
 });
 
 export const notifications = pgTable('notifications', {
-  id: text('id').primaryKey().$defaultFn(() => createId()),
+  id: text('id').primaryKey().$defaultFn(() => nanoid(4)),
   type: notificationTypeEnum('type').notNull(),
   message: text('message').notNull(),
   toolId: text('tool_id').notNull().references(() => tools.id),

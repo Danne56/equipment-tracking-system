@@ -229,7 +229,7 @@ bun run dev:client  # Run the Vite dev server for React
 ### Database Management
 
 ```bash
-# Test PostgreSQL connection
+# Test database connectivity, schema validation, and CRUD operations
 bun run db:test
 
 # Generate new migrations (after schema changes)

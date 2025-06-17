@@ -22,7 +22,8 @@
     "postinstall": "bun run build:shared && bun run build:server",
     "db:generate": "cd server && bun run db:generate",
     "db:migrate": "cd server && bun run db:migrate",
-    "db:seed": "cd server && bun run db:seed"
+    "db:seed": "cd server && bun run db:seed",
+    "db:test": "cd server && bun run db:test"
   },
   "keywords": [
     "bun",

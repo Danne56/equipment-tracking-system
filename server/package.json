@@ -8,13 +8,14 @@
     "dev": "bun --watch run src/index.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:seed": "bun run seed.ts"
+    "db:seed": "bun run scripts/seed.ts",
+    "db:test": "bun run scripts/db-test.ts"
   },
   "dependencies": {
-    "@paralleldrive/cuid2": "^2.2.2",
     "@types/qrcode": "^1.5.5",
     "@types/uuid": "^10.0.0",
     "hono": "^4.7.11",
+    "nanoid": "^5.1.5",
     "pg": "^8.13.1",
     "postgres": "^3.4.6",
     "shared": "workspace:*"

@@ -5,39 +5,39 @@
  * This script adds sample tools to the database for testing purposes
  */
 
-import { db } from './src/database/index.js';
-import { tools } from './src/database/schema.js';
-import { createId } from '@paralleldrive/cuid2';
+import { db } from '../src/database/index.js';
+import { tools } from '../src/database/schema.js';
+import { nanoid } from 'nanoid';
 
 const sampleTools = [
   {
     name: "Electric Drill",
     description: "Cordless electric drill with multiple bits",
-    qrCode: createId(),
+    qrCode: nanoid(4),
     status: 'available' as const
   },
   {
     name: "Circular Saw",
     description: "7.25 inch circular saw for wood cutting",
-    qrCode: createId(),
+    qrCode: nanoid(4),
     status: 'available' as const
   },
   {
     name: "Socket Set",
     description: "Complete socket wrench set with ratchet",
-    qrCode: createId(),
+    qrCode: nanoid(4),
     status: 'available' as const
   },
   {
     name: "Angle Grinder",
     description: "4.5 inch angle grinder with cutting discs",
-    qrCode: createId(),
+    qrCode: nanoid(4),
     status: 'available' as const
   },
   {
     name: "Digital Multimeter",
     description: "Digital multimeter for electrical testing",
-    qrCode: createId(),
+    qrCode: nanoid(4),
     status: 'available' as const
   }
 ];
