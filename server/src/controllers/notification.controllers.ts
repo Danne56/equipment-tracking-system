@@ -1,11 +1,12 @@
 import type { Context } from 'hono';
-import { db } from '../database';
+import { createDatabase } from '../database';
 import { notifications, tools } from '../database/schema';
 import { eq, desc } from 'drizzle-orm';
 
 // Get notifications
 export const getNotificationsController = async (c: Context) => {
     try {
+        const db = createDatabase(c.env);
         const notificationsList = await db.select({
             id: notifications.id,
             type: notifications.type,
@@ -40,6 +41,7 @@ export const getNotificationsController = async (c: Context) => {
 // Mark notification as read
 export const markNotificationAsReadController = async (c: Context) => {
     try {
+        const db = createDatabase(c.env);
         const notificationId = c.req.param('id');
         if (!notificationId) {
             return c.json({ success: false, message: 'Notification ID is required' }, 400);

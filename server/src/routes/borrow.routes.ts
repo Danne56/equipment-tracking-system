@@ -5,8 +5,9 @@ import {
     getAllBorrowRecordsController,
     getActiveBorrowRecordsController
 } from '../controllers/borrow.controllers';
+import type { Bindings } from '../types';
 
-const borrowRoutes = new Hono();
+const borrowRoutes = new Hono<{ Bindings: Bindings }>();
 
 // Borrow a tool
 borrowRoutes.post('/', borrowToolController);

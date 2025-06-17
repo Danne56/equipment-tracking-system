@@ -3,8 +3,9 @@ import {
     getNotificationsController,
     markNotificationAsReadController
 } from '../controllers/notification.controllers';
+import type { Bindings } from '../types';
 
-const notificationRoutes = new Hono();
+const notificationRoutes = new Hono<{ Bindings: Bindings }>();
 
 // Get notifications
 notificationRoutes.get('/', getNotificationsController);

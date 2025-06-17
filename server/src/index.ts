@@ -3,8 +3,9 @@ import { cors } from 'hono/cors';
 import toolRoutes from './routes/tool.routes';
 import borrowRoutes from './routes/borrow.routes';
 import notificationRoutes from './routes/notification.routes';
+import type { Bindings } from './types';
 
-const app = new Hono();
+const app = new Hono<{ Bindings: Bindings }>();
 
 // Middleware
 app.use(cors());
@@ -46,7 +47,7 @@ app.onError((err, c) => {
     return c.json({
         success: false,
         message: 'An unexpected error occurred',
-        error: process.env.NODE_ENV === 'development' ? err.message : undefined
+        error: c.env.NODE_ENV === 'development' ? err.message : undefined
     }, 500);
 });
 

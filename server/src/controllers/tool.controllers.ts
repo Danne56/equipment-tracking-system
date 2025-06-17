@@ -1,13 +1,14 @@
 import type { Context } from 'hono';
 import { nanoid } from 'nanoid';
 import QRCode from 'qrcode';
-import { db } from '../database';
+import { createDatabase } from '../database';
 import { tools, notifications, borrowRecords } from '../database/schema';
 import { desc, eq } from 'drizzle-orm';
 
 // Get all tools
 export const getAllToolsController = async (c: Context) => {
     try {
+        const db = createDatabase(c.env);
         const allTools = await db.select().from(tools).orderBy(desc(tools.createdAt));
         return c.json({
             success: true,
@@ -16,6 +17,25 @@ export const getAllToolsController = async (c: Context) => {
         });
     } catch (error) {
         console.error('Error fetching tools:', error);
+        
+        // Check if it's a database connection error
+        if (error instanceof Error) {
+            if (error.message.includes('Missing required environment variables')) {
+                return c.json({
+                    success: false,
+                    tools: [],
+                    message: 'Database configuration error: Missing environment variables'
+                }, 500);
+            }
+            if (error.message.includes('Invalid database connection string')) {
+                return c.json({
+                    success: false,
+                    tools: [],
+                    message: 'Database configuration error: Invalid connection string'
+                }, 500);
+            }
+        }
+        
         return c.json({
             success: false,
             tools: [],
@@ -27,6 +47,7 @@ export const getAllToolsController = async (c: Context) => {
 // Create a new tool
 export const createToolController = async (c: Context) => {
     try {
+        const db = createDatabase(c.env);
         const body = await c.req.json();
         if (!body.name?.trim()) {
             return c.json({
@@ -76,6 +97,7 @@ export const createToolController = async (c: Context) => {
 // Get tool by QR code
 export const getToolByQrIdController = async (c: Context) => {
     try {
+        const db = createDatabase(c.env);
         const qrId = c.req.param('qrId');
         const [tool] = await db.select().from(tools).where(eq(tools.id, qrId));
 
@@ -92,6 +114,7 @@ export const getToolByQrIdController = async (c: Context) => {
 // Get tool by ID
 export const getToolByIdController = async (c: Context) => {
     try {
+        const db = createDatabase(c.env);
         const id = c.req.param('id');
         const [tool] = await db.select().from(tools).where(eq(tools.id, id));
 
@@ -108,6 +131,7 @@ export const getToolByIdController = async (c: Context) => {
 // Update a tool
 export const updateToolController = async (c: Context) => {
     try {
+        const db = createDatabase(c.env);
         const id = c.req.param('id');
         const body = await c.req.json();
 
@@ -171,6 +195,7 @@ export const updateToolController = async (c: Context) => {
 // Delete a tool
 export const deleteToolController = async (c: Context) => {
     try {
+        const db = createDatabase(c.env);
         const id = c.req.param('id');
 
         // Check if tool exists
@@ -218,6 +243,7 @@ export const deleteToolController = async (c: Context) => {
 // Force delete a tool (removes all related data)
 export const forceDeleteToolController = async (c: Context) => {
     try {
+        const db = createDatabase(c.env);
         const id = c.req.param('id');
 
         // Check if tool exists

@@ -1,11 +1,12 @@
 import type { Context } from 'hono';
-import { db } from '../database';
+import { createDatabase } from '../database';
 import { tools, borrowRecords, notifications } from '../database/schema';
 import { eq, and, desc } from 'drizzle-orm';
 
 // Borrow a tool
 export const borrowToolController = async (c: Context) => {
     try {
+        const db = createDatabase(c.env);
         const body = await c.req.json();
         const { toolId, borrowerName, borrowerLocation, purpose } = body;
 
@@ -65,6 +66,7 @@ export const borrowToolController = async (c: Context) => {
 // Return a tool
 export const returnToolController = async (c: Context) => {
     try {
+        const db = createDatabase(c.env);
         const body = await c.req.json();
         if (!body.borrowRecordId) {
             return c.json({ success: false, message: 'Borrow record ID is required' }, 400);
@@ -117,6 +119,7 @@ export const returnToolController = async (c: Context) => {
 // Get all borrow records
 export const getAllBorrowRecordsController = async (c: Context) => {
     try {
+        const db = createDatabase(c.env);
         const records = await db.select({
             id: borrowRecords.id,
             toolId: borrowRecords.toolId,
@@ -153,6 +156,7 @@ export const getAllBorrowRecordsController = async (c: Context) => {
 // Get active borrows
 export const getActiveBorrowRecordsController = async (c: Context) => {
     try {
+        const db = createDatabase(c.env);
         const records = await db.select({
             id: borrowRecords.id,
             toolId: borrowRecords.toolId,

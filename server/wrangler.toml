@@ -1,0 +1,16 @@
+name = "server"
+main = "src/index.ts"
+compatibility_date = "2025-02-13"
+compatibility_flags = [ "nodejs_compat" ]
+
+[vars]
+NODE_ENV = "production"
+DB_HOST = "localhost"
+DB_PORT = "5432"
+DB_USER = "postgres"
+DB_NAME = "postgres"
+DB_PASSWORD should be set as a secret: wrangler secret put DB_PASSWORD
+
+[observability]
+enabled = true
+head_sampling_rate = 1

@@ -8,8 +8,9 @@ import {
     deleteToolController,
     forceDeleteToolController
 } from '../controllers/tool.controllers';
+import type { Bindings } from '../types';
 
-const toolRoutes = new Hono();
+const toolRoutes = new Hono<{ Bindings: Bindings }>();
 
 // Get all tools
 toolRoutes.get('/', getAllToolsController);

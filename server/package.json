@@ -12,6 +12,7 @@
     "db:test": "bun run scripts/db-test.ts"
   },
   "dependencies": {
+    "@cloudflare/workers-types": "^4.20250617.0",
     "@types/qrcode": "^1.5.5",
     "@types/uuid": "^10.0.0",
     "hono": "^4.7.11",
