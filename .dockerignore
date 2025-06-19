@@ -1,0 +1,31 @@
+# Node modules & bun cache
+node_modules/
+*/node_modules/
+.bun/
+
+# Env & config
+.env*
+.vscode/
+.idea/
+
+# Logs & misc
+*.log
+*.tsbuildinfo
+
+# Output folders (hanya ignore hasil build, bukan source)
+client/dist/
+server/dist/
+shared/dist/
+
+# Tests (kalau tidak dibutuhkan)
+test/
+tests/
+**/*.test.*
+**/*.spec.*
+
+# OS & editor files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~

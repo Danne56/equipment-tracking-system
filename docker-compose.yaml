@@ -1,0 +1,14 @@
+services:
+  app:
+    build:
+      context: .
+      target: prod
+    image: worktrack:latest
+    container_name: worktrack
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    env_file:
+      - ./server/.env
+    restart: unless-stopped
