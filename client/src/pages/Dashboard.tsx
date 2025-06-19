@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Package, Users, Clock } from 'lucide-react'
 import type { Tool, BorrowRecord } from 'shared'
+import { api } from '../lib/axios'
 
 export default function Dashboard() {
   const [stats, setStats] = useState({
@@ -12,21 +13,16 @@ export default function Dashboard() {
   const [recentActivities, setRecentActivities] = useState<(BorrowRecord & { tool: Tool | null })[]>([])
   const [loading, setLoading] = useState(true)
 
-  const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3000"
-
   useEffect(() => {
     fetchDashboardData()
   }, [])
 
   const fetchDashboardData = async () => {
     try {
-      const [toolsResponse, recordsResponse] = await Promise.all([
-        fetch(`${SERVER_URL}/api/tools`),
-        fetch(`${SERVER_URL}/api/borrow-records/active`)
+      const [toolsData, recordsData] = await Promise.all([
+        api.get('/tools'),
+        api.get('/borrow-records/active')
       ])
-
-      const toolsData = await toolsResponse.json()
-      const recordsData = await recordsResponse.json()
 
       if (toolsData.success) {
         const tools = toolsData.tools

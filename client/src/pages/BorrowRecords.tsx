@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { FileText, Package, User, MapPin, Calendar, CheckCircle } from 'lucide-react'
 import Swal from 'sweetalert2'
 import type { BorrowRecord, Tool, ReturnToolRequest } from 'shared'
+import { api } from '../lib/axios'
 
 type ExtendedBorrowRecord = BorrowRecord & { tool: Tool | null }
 
@@ -11,21 +12,16 @@ export default function BorrowRecords() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'all' | 'active'>('active')
 
-  const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3000"
-
   useEffect(() => {
     fetchRecords()
   }, [])
 
   const fetchRecords = async () => {
     try {
-      const [allResponse, activeResponse] = await Promise.all([
-        fetch(`${SERVER_URL}/api/borrow-records`),
-        fetch(`${SERVER_URL}/api/borrow-records/active`)
+      const [allData, activeData] = await Promise.all([
+        api.get('/borrow-records'),
+        api.get('/borrow-records/active')
       ])
-
-      const allData = await allResponse.json()
-      const activeData = await activeResponse.json()
 
       if (allData.success) {
         setRecords(allData.records)
@@ -57,15 +53,7 @@ export default function BorrowRecords() {
     if (!result.isConfirmed) return
 
     try {
-      const response = await fetch(`${SERVER_URL}/api/return`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ borrowRecordId } as ReturnToolRequest)
-      })
-
-      const data = await response.json()
+      const data = await api.post('/return', { borrowRecordId } as ReturnToolRequest)
 
       if (data.success) {
         // Refresh the records

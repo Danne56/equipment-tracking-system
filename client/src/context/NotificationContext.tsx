@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import type { Notification } from 'shared'
+import { api } from '../lib/axios'
 
 interface NotificationContextType {
   notifications: (Notification & { tool: any })[]
@@ -15,12 +16,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const [notifications, setNotifications] = useState<(Notification & { tool: any })[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
 
-  const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3000"
-
   const fetchNotifications = async () => {
     try {
-      const response = await fetch(`${SERVER_URL}/api/notifications`)
-      const data = await response.json()
+      const data = await api.get('/notifications')
       
       if (data.success) {
         // Convert read field from string to boolean
@@ -38,16 +36,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   const markAsRead = async (id: string) => {
     try {
-      const response = await fetch(`${SERVER_URL}/api/notifications/${id}/read`, {
-        method: 'PATCH'
-      })
+      await api.put(`/notifications/${id}/read`)
       
-      if (response.ok) {
-        setNotifications(prev => 
-          prev.map(n => n.id === id ? { ...n, read: true } : n)
-        )
-        setUnreadCount(prev => Math.max(0, prev - 1))
-      }
+      setNotifications(prev => 
+        prev.map(n => n.id === id ? { ...n, read: true } : n)
+      )
+      setUnreadCount(prev => Math.max(0, prev - 1))
     } catch (error) {
       console.error('Error marking notification as read:', error)
     }
@@ -59,7 +53,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       
       // Mark all unread notifications as read
       const promises = unreadNotifications.map(n => 
-        fetch(`${SERVER_URL}/api/notifications/${n.id}/read`, { method: 'PATCH' })
+        api.put(`/notifications/${n.id}/read`)
       )
       
       await Promise.all(promises)

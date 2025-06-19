@@ -3,6 +3,7 @@ import { QrCode, Package, User, MapPin, Target } from 'lucide-react'
 import Swal from 'sweetalert2'
 import type { Tool, BorrowToolRequest } from 'shared'
 import QrReader from '../components/QrReader'
+import { api } from '../lib/axios'
 
 export default function QRScanner() {
   const [scannedTool, setScannedTool] = useState<Tool | null>(null)
@@ -19,14 +20,11 @@ export default function QRScanner() {
   const [error, setError] = useState<string>('')
   const [qrReaderKey, setQrReaderKey] = useState(0) // Add key for QrReader remount
 
-  const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3000"
-
   const handleQrScan = async (qrId: string) => {
     setLoading(true)
     setError('')
     try {
-      const response = await fetch(`${SERVER_URL}/api/tools/qr/${qrId}`)
-      const data = await response.json()
+      const data = await api.get(`/tools/qr/${qrId}`)
 
       if (data.success) {
         setScannedTool(data.tool)
@@ -57,15 +55,7 @@ export default function QRScanner() {
     setError('')
 
     try {
-      const response = await fetch(`${SERVER_URL}/api/borrow`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(borrowForm)
-      })
-
-      const data = await response.json()
+      const data = await api.post('/borrow', borrowForm)
 
       if (data.success) {
         setError('')

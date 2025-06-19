@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Plus, Package, QrCode, Edit, Trash2 } from 'lucide-react'
 import Swal from 'sweetalert2'
 import type { Tool, CreateToolRequest, UpdateToolRequest } from 'shared'
+import { api } from '../lib/axios'
 
 export default function ToolManagement() {
   const [tools, setTools] = useState<Tool[]>([])
@@ -17,10 +18,7 @@ export default function ToolManagement() {
   const [editFormData, setEditFormData] = useState<UpdateToolRequest>({
     name: '',
     description: '',
-    status: 'available'
-  })
-
-  const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3000"
+    status: 'available'  })
 
   useEffect(() => {
     fetchTools()
@@ -28,8 +26,7 @@ export default function ToolManagement() {
 
   const fetchTools = async () => {
     try {
-      const response = await fetch(`${SERVER_URL}/api/tools`)
-      const data = await response.json()
+      const data = await api.get('/tools')
       
       if (data.success) {
         setTools(data.tools)
@@ -45,15 +42,7 @@ export default function ToolManagement() {
     e.preventDefault()
     
     try {
-      const response = await fetch(`${SERVER_URL}/api/tools`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formData)
-      })
-      
-      const data = await response.json()
+      const data = await api.post('/tools', formData)
       
       if (data.success) {
         setTools(prev => [data.tool, ...prev])
@@ -105,15 +94,7 @@ export default function ToolManagement() {
     if (!selectedTool) return
     
     try {
-      const response = await fetch(`${SERVER_URL}/api/tools/${selectedTool.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(editFormData)
-      })
-      
-      const data = await response.json()
+      const data = await api.put(`/tools/${selectedTool.id}`, editFormData)
       
       if (data.success) {
         setTools(prev => prev.map(tool => 
@@ -162,11 +143,7 @@ export default function ToolManagement() {
     if (!result.isConfirmed) return
     
     try {
-      const response = await fetch(`${SERVER_URL}/api/tools/${tool.id}`, {
-        method: 'DELETE'
-      })
-      
-      const data = await response.json()
+      const data = await api.delete(`/tools/${tool.id}`)
       
       if (data.success) {
         setTools(prev => prev.filter(t => t.id !== tool.id))
@@ -221,11 +198,7 @@ export default function ToolManagement() {
 
   const handleForceDeleteTool = async (tool: Tool) => {
     try {
-      const response = await fetch(`${SERVER_URL}/api/tools/${tool.id}/force`, {
-        method: 'DELETE'
-      })
-      
-      const data = await response.json()
+      const data = await api.delete(`/tools/${tool.id}/force`)
       
       if (data.success) {
         setTools(prev => prev.filter(t => t.id !== tool.id))
