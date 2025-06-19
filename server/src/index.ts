@@ -11,11 +11,6 @@ const app = new Hono<{ Bindings: Bindings }>();
 // Middleware
 app.use(cors());
 
-// Root and Hello Endpoints
-app.get('/', (c) => {
-    return c.redirect('/hello');
-});
-
 app.get('/hello', async (c) => {
     const data = {
         message: "Hello Workshop Tool Tracking System!",
