@@ -4,6 +4,7 @@ import toolRoutes from './routes/tool.routes';
 import borrowRoutes from './routes/borrow.routes';
 import notificationRoutes from './routes/notification.routes';
 import type { Bindings } from './types';
+import { serveStatic } from "hono/bun";
 
 const app = new Hono<{ Bindings: Bindings }>();
 
@@ -12,7 +13,7 @@ app.use(cors());
 
 // Root and Hello Endpoints
 app.get('/', (c) => {
-    return c.text('Workshop Tool Tracking System');
+    return c.redirect('/hello');
 });
 
 app.get('/hello', async (c) => {
@@ -49,6 +50,13 @@ app.onError((err, c) => {
         message: 'An unexpected error occurred',
         error: c.env.NODE_ENV === 'development' ? err.message : undefined
     }, 500);
+});
+
+// Serve static files for everything else
+app.use("*", serveStatic({ root: "./static" }));
+ 
+app.get("*", async (c, next) => {
+  return serveStatic({ root: "./static", path: "index.html" })(c, next);
 });
 
 export default app;
